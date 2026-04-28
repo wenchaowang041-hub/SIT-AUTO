@@ -1,0 +1,49 @@
+# Linux 回归套件示例：结构更接近正式套件，包含 pre/test/post、条件步骤和目标选择器。
+description: Linux 回归套件示例
+metadata:
+  category: regression
+  owner: platform
+settings:
+  controller:
+    sync_toolkit: false
+defaults:
+  stop_on_fail: true
+  timeout_sec: 120
+variables:
+  enable_optional: true
+  collect_file: TestController/References/Version.txt
+pre_test_commands:
+  - test: PRE-001-Environment
+    type: command
+    command: >-
+      python -c "print('suite={suite_name}; server_list={server_list_name}; target={target_name}')"
+test_commands:
+  - test: TEC-001-Uname
+    type: command
+    command: >-
+      uname -a
+  - test: TEC-002-Optional
+    type: command
+    when: "{variables_enable_optional}"
+    command: >-
+      python -c "print('optional-step for {target_name}')"
+  - test: TEC-003-DisabledExample
+    type: command
+    enabled: false
+    command: >-
+      python -c "print('this should never run')"
+  - test: TEC-004-CollectConfig
+    type: fetch
+    remote_path: "{variables_collect_file}"
+    local_name: collected-os-release.txt
+  - test: TEC-005-OnlyTargetA
+    type: command
+    target_names:
+      - local-demo-a
+    command: >-
+      python -c "print('selector-step for {target_name}')"
+post_test_commands:
+  - test: POST-001-Finish
+    type: command
+    command: >-
+      python -c "print('cleanup for {target_name}')"

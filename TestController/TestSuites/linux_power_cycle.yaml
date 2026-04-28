@@ -1,0 +1,24 @@
+# 电源循环示例：先发起 BMC 电源循环，再等待 SSH 恢复，最后执行回连检查。
+description: Linux 电源循环套件
+metadata:
+  category: cycle
+  owner: platform
+defaults:
+  stop_on_fail: true
+  timeout_sec: 180
+pre_test_commands:
+  - test: PRE-001-Uptime
+    type: command
+    command: >-
+      uptime
+test_commands:
+  - test: TEC-001-PowerCycle
+    type: power_cycle
+    provider: ipmi
+    reconnect_timeout_sec: 600
+post_test_commands:
+  - test: POST-001-PostCheck
+    type: command
+    command: >-
+      uname -a
+    timeout_sec: 120

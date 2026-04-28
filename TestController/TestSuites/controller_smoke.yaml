@@ -1,0 +1,31 @@
+# 控制器本地自检：先把框架跑通，再换真实 Linux 目标。
+description: 控制器本地自检套件
+metadata:
+  category: smoke
+  owner: platform
+defaults:
+  stop_on_fail: true
+  timeout_sec: 60
+variables:
+  message: suite-ready
+pre_test_commands:
+  - test: PRE-001-Begin
+    type: command
+    command: >-
+      python -c "print('pre-check for {target_name}: {variables_message}')"
+test_commands:
+  - test: TEC-001-Platform
+    type: command
+    command: >-
+      python -c "import platform; print(platform.platform())"
+    timeout_sec: 60
+  - test: TEC-002-TargetName
+    type: command
+    command: >-
+      python -c "print('target={target_name}; greeting={variables_greeting}; owner={variables_expected_owner}')"
+    timeout_sec: 60
+post_test_commands:
+  - test: POST-001-Finish
+    type: command
+    command: >-
+      python -c "print('post-check for {target_name}: {variables_message}')"

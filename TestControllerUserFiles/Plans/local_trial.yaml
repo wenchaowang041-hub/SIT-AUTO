@@ -1,0 +1,12 @@
+description: 本地演示计划，验证 plan 入口和批量摘要
+defaults:
+  skip_toolkit_sync: true
+  skip_user_sync: true
+  skip_settings_sync: true
+runs:
+  - suite: controller_smoke
+    server_list: local_demo
+  - suite: controller_smoke
+    server_list: local_json_demo
+    labels_any:
+      - json

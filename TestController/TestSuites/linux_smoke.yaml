@@ -1,0 +1,43 @@
+# Linux 基础巡检：对应旧平台里一类基础 smoke/quick stress 的轻量版本。
+description: Linux 基础巡检套件
+metadata:
+  category: smoke
+  owner: platform
+settings:
+  controller:
+    sync_toolkit: true
+defaults:
+  stop_on_fail: true
+  timeout_sec: 120
+variables:
+  collect_file: /etc/os-release
+pre_test_commands:
+  - test: PRE-001-Uptime
+    type: command
+    command: >-
+      uptime
+test_commands:
+  - test: TEC-001-Uname
+    type: command
+    command: >-
+      uname -a
+    timeout_sec: 120
+  - test: TEC-002-Identity
+    type: command
+    command: >-
+      id
+    timeout_sec: 120
+  - test: TEC-003-Disk
+    type: command
+    command: >-
+      df -h
+    timeout_sec: 120
+  - test: TEC-004-OsRelease
+    type: fetch
+    remote_path: "{variables_collect_file}"
+    local_name: os-release.txt
+post_test_commands:
+  - test: POST-001-Hostname
+    type: command
+    command: >-
+      hostname

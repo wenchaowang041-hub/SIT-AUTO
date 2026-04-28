@@ -1,0 +1,23 @@
+description: 双本地目标演示清单
+settings:
+  controller:
+    sync_toolkit: false
+variables:
+  greeting: dual-demo
+defaults:
+  executor_type: local
+  host: localhost
+  port: 22
+targets:
+  - name: local-demo-a
+    labels:
+      - demo
+      - local
+    variables:
+      expected_owner: alpha
+  - name: local-demo-b
+    labels:
+      - demo
+      - local
+    variables:
+      expected_owner: beta

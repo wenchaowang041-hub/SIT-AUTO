@@ -1,0 +1,22 @@
+# 计划文件模板：把多次 suite/server list 运行串成一个批处理入口。
+description: 计划文件模板
+defaults:
+  skip_toolkit_sync: false
+  skip_user_sync: false
+  skip_settings_sync: false
+  runtime_variables: {}
+  skip_targets: []
+  target_names: []
+  labels_any: []
+  exclude_labels: []
+runs:
+  - suite: linux_smoke
+    server_list: lab_servers
+    runtime_variables:
+      collect_file: /etc/os-release
+  - suite: linux_regression
+    server_lists:
+      - rack_a
+      - rack_b
+    labels_any:
+      - smoke

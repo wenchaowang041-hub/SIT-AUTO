@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.runtime/
+Results/
+*.egg-info/
+_references/source_packages/
+_archive/legacy_web_scaffold/app/
+_archive/legacy_web_scaffold/plans/
+_archive/legacy_web_scaffold/tests/
+_archive/legacy_web_scaffold/data/
+_archive/legacy_web_scaffold/artifacts/
+_archive/legacy_web_scaffold/compose.yaml
+_archive/legacy_web_scaffold/Dockerfile

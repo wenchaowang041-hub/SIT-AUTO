@@ -1,0 +1,18 @@
+{
+  "controller": {
+    "results_dir": "Results",
+    "default_python": "python3",
+    "stop_on_fail": true,
+    "sync_toolkit": true,
+    "sync_toolkit_user": true,
+    "sync_toolkit_settings": true
+  },
+  "remote": {
+    "root_dir": "~/sit-auto",
+    "toolkit_dir": "~/sit-auto/Toolkit",
+    "toolkit_user_dir": "~/sit-auto/ToolkitUserFiles",
+    "toolkit_settings_dir": "~/sit-auto/ToolkitSettings",
+    "results_dir": "~/sit-auto/Results",
+    "python": "python3"
+  }
+}

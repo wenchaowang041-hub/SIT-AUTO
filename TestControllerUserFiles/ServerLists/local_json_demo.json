@@ -1,0 +1,41 @@
+{
+  "description": "本地 JSON 演示清单",
+  "settings": {
+    "controller": {
+      "sync_toolkit": false,
+      "sync_toolkit_user": false,
+      "sync_toolkit_settings": false
+    }
+  },
+  "variables": {
+    "greeting": "json-demo"
+  },
+  "defaults": {
+    "executor_type": "local",
+    "host": "localhost",
+    "port": 22,
+    "labels": [
+      "demo",
+      "json"
+    ]
+  },
+  "targets": [
+    {
+      "name": "local-json-a",
+      "variables": {
+        "expected_owner": "json-alpha"
+      }
+    },
+    {
+      "name": "local-json-b",
+      "labels": [
+        "demo",
+        "json",
+        "extra"
+      ],
+      "variables": {
+        "expected_owner": "json-beta"
+      }
+    }
+  ]
+}

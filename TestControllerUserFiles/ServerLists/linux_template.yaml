@@ -1,0 +1,30 @@
+# Linux 目标模板：按这个格式填写后即可直接被控制器读取。
+description: Linux SSH 目标模板
+settings:
+  remote:
+    root_dir: ~/sit-auto
+    toolkit_dir: ~/sit-auto/Toolkit
+    toolkit_user_dir: ~/sit-auto/ToolkitUserFiles
+    toolkit_settings_dir: ~/sit-auto/ToolkitSettings
+    results_dir: ~/sit-auto/Results
+variables:
+  environment: lab
+defaults:
+  executor_type: ssh
+  port: 22
+  labels:
+    - linux
+targets:
+  - name: lab-node-01
+    host: 192.168.1.100
+    username: root
+    password: change-me
+    labels:
+      - smoke
+    variables:
+      role: smoke-node
+    bmc:
+      provider: ipmi
+      address: 192.168.1.200
+      username: admin
+      password: change-me

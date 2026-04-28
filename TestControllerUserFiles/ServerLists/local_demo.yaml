@@ -1,0 +1,20 @@
+# 本地演示目标：用于在当前控制器机器上直接验证整套流程。
+description: 本地自检目标
+settings:
+  controller:
+    sync_toolkit: false
+variables:
+  greeting: hello-from-local
+defaults:
+  executor_type: local
+  host: localhost
+  port: 22
+targets:
+  - name: local-demo
+    username: ""
+    password: ""
+    labels:
+      - demo
+      - local
+    variables:
+      expected_owner: codex
