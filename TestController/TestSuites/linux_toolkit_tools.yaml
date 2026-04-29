@@ -1,0 +1,34 @@
+# 目标机侧工具脚本巡检：验证 Toolkit/UserFiles 下的脚本能被上传并执行。
+description: Linux Toolkit 工具脚本巡检
+metadata:
+  category: tools
+  owner: platform
+settings:
+  controller:
+    sync_toolkit: true
+    sync_toolkit_user: true
+    sync_toolkit_settings: true
+defaults:
+  stop_on_fail: true
+  timeout_sec: 180
+pre_test_commands:
+  - test: PRE-001-ListUserFiles
+    type: command
+    command: >-
+      find {settings_remote_toolkit_user_dir} -maxdepth 3 -type f | sort
+test_commands:
+  - test: TEC-001-SystemSmokeScript
+    type: command
+    command: >-
+      bash {settings_remote_toolkit_user_dir}/tests/smoke_system_check.sh "${SIT_AUTO_RESULT_DIR}/smoke-system"
+    timeout_sec: 240
+  - test: TEC-002-StorageInventoryScript
+    type: command
+    command: >-
+      bash {settings_remote_toolkit_user_dir}/tests/storage_inventory_check.sh "${SIT_AUTO_RESULT_DIR}/storage-inventory"
+    timeout_sec: 180
+post_test_commands:
+  - test: POST-001-ToolScriptsDone
+    type: command
+    command: >-
+      echo "Toolkit user tool scripts completed on {target_name}"

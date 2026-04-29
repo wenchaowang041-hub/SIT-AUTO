@@ -300,6 +300,13 @@ python TestController/StartController.py run-suite --name linux_smoke --server-l
 python TestController/StartController.py run-suite --name linux_smoke --server-list lab_linux --jobs 2
 ```
 
+验证目标机侧工具和测试脚本：
+
+```powershell
+python TestController/StartController.py run-suite --name linux_toolkit_tools --server-list lab_linux --jobs 1
+python TestController/StartController.py parse-results --suite linux_toolkit_tools --json
+```
+
 只跑某些目标：
 
 ```powershell

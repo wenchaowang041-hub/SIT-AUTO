@@ -104,6 +104,12 @@ python TestController/StartController.py preflight --suite linux_power_cycle --s
 python TestController/StartController.py run-suite --name linux_smoke --server-list lab_linux
 ```
 
+验证目标机侧工具和测试脚本：
+
+```bash
+python TestController/StartController.py run-suite --name linux_toolkit_tools --server-list lab_linux
+```
+
 如果先不想同步 `Toolkit/UserFiles` 或 `Toolkit/Settings`：
 
 ```bash

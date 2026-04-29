@@ -7,6 +7,7 @@ from TestController.Commands.validate_platform import check_environment, validat
 def test_controller_validation_commands_pass_for_local_assets():
     assert check_environment()["status"] == "PASSED"
     assert validate_suite("linux_smoke")["status"] == "PASSED"
+    assert validate_suite("linux_toolkit_tools")["status"] == "PASSED"
     assert validate_server_list("local_json_demo")["status"] == "PASSED"
     assert validate_plan("local_trial")["status"] == "PASSED"
 

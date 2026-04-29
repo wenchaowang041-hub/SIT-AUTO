@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -15,12 +16,15 @@ def ensure_directory(path: str | Path) -> Path:
 def execute_command(command: str, result_dir: str | Path, timeout_sec: int = 300) -> int:
     # Toolkit 端只负责在目标机本地执行命令，并把输出写到结果目录。
     result_path = ensure_directory(result_dir)
+    env = dict(os.environ)
+    env["SIT_AUTO_RESULT_DIR"] = str(result_path)
     completed = subprocess.run(
         command,
         shell=True,
         capture_output=True,
         text=True,
         timeout=timeout_sec,
+        env=env,
     )
 
     (result_path / "stdout.log").write_text(completed.stdout, encoding="utf-8")
@@ -31,6 +35,7 @@ def execute_command(command: str, result_dir: str | Path, timeout_sec: int = 300
                 "mode": "command",
                 "command": command,
                 "exit_code": completed.returncode,
+                "result_dir": str(result_path),
             },
             ensure_ascii=False,
             indent=2,

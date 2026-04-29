@@ -40,6 +40,7 @@
 - 支持 `Toolkit / Toolkit/UserFiles / Toolkit/Settings` 分开同步
 - 支持同一 ServerList 内 target 并发执行：`--jobs`
 - 支持 `command / fetch / power_cycle`
+- 新增 `linux_toolkit_tools`，用于验证 `Toolkit/UserFiles` 下的工具和测试脚本
 - 支持 `check-environment / validate-suite / validate-server-list / validate-plan / preflight`
 - 支持 `parse-results`
 - 本地 pytest 已通过
@@ -145,6 +146,7 @@ Toolkit：
 
 - [controller_smoke.yaml](TestController/TestSuites/controller_smoke.yaml)
 - [linux_smoke.yaml](TestController/TestSuites/linux_smoke.yaml)
+- [linux_toolkit_tools.yaml](TestController/TestSuites/linux_toolkit_tools.yaml)
 - [linux_regression.yaml](TestController/TestSuites/linux_regression.yaml)
 - [linux_power_cycle.yaml](TestController/TestSuites/linux_power_cycle.yaml)
 
