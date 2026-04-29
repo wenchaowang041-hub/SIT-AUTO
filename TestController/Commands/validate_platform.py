@@ -195,9 +195,9 @@ def check_python_modules(module_names: list[str]) -> list[dict[str, Any]]:
 def check_workspace_paths() -> list[dict[str, Any]]:
     required_paths = [
         workspace_root() / "TestController",
-        workspace_root() / "TestControllerUserFiles" / "ServerLists",
+        workspace_root() / "TestController" / "UserFiles" / "ServerLists",
         workspace_root() / "Toolkit",
-        workspace_root() / "ToolkitSettings" / "user-settings.json",
+        workspace_root() / "Toolkit" / "Settings" / "user-settings.json",
     ]
     results: list[dict[str, Any]] = []
     for path in required_paths:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import shutil
 from pathlib import Path
@@ -70,6 +71,7 @@ def run_linux_suite(
     target_names: set[str] | None = None,
     labels_any: set[str] | None = None,
     exclude_labels: set[str] | None = None,
+    max_workers: int = 1,
 ) -> int:
     return run_linux_suite_with_details(
         name=name,
@@ -83,6 +85,7 @@ def run_linux_suite(
         target_names=target_names,
         labels_any=labels_any,
         exclude_labels=exclude_labels,
+        max_workers=max_workers,
     )["failures"]
 
 
@@ -99,8 +102,12 @@ def run_linux_suite_with_details(
     target_names: set[str] | None = None,
     labels_any: set[str] | None = None,
     exclude_labels: set[str] | None = None,
+    max_workers: int = 1,
 ) -> dict[str, Any]:
     # 这一层对应旧平台的 Run-WcsSuite：读套件、读 server list、执行阶段、回收结果、写摘要。
+    if max_workers < 1:
+        raise ValueError("max_workers must be >= 1")
+
     settings = read_controller_settings()
     suite = normalize_suite_definition(load_data_file(resolve_suite_file(name)), name)
     servers = normalize_server_list(load_data_file(resolve_server_list_file(server_list)), server_list)
@@ -144,10 +151,13 @@ def run_linux_suite_with_details(
             "exclude_labels": sorted(exclude_labels),
         },
         "sync_options": sync_options,
+        "max_workers": max_workers,
     }
     write_json(result_root / "run_manifest.json", run_manifest)
 
-    for target in servers["targets"]:
+    target_results: dict[int, dict[str, Any]] = {}
+    executable_targets: list[tuple[int, dict[str, Any]]] = []
+    for index, target in enumerate(servers["targets"]):
         target_name = target["name"]
         skip_reason = target_skip_reason(
             target=target,
@@ -159,24 +169,96 @@ def run_linux_suite_with_details(
         if skip_reason:
             print(f"\n[Target] {target_name} SKIPPED")
             append_log(controller_log, f"[Target] {target_name} SKIPPED: {skip_reason}")
-            summary_rows.append(
-                {
-                    "target_name": target_name,
-                    "phase": "target",
-                    "test_name": "SKIPPED",
-                    "type": "skip",
-                    "status": "SKIPPED",
-                    "return_code": 0,
-                    "result_directory": "",
-                    "message": skip_reason,
-                }
-            )
+            target_results[index] = build_skipped_target_result(target_name, skip_reason)
             continue
 
+        executable_targets.append((index, target))
+
+    if max_workers == 1 or len(executable_targets) <= 1:
+        for index, target in executable_targets:
+            target_results[index] = execute_target(
+                target=target,
+                suite=suite,
+                servers=servers,
+                settings=settings,
+                sync_options=sync_options,
+                stamp=stamp,
+                result_root=result_root,
+                runtime_variables=runtime_variables,
+                stop_on_fail=stop_on_fail,
+                controller_log=controller_log,
+            )
+    else:
+        worker_count = min(max_workers, len(executable_targets))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = {
+                executor.submit(
+                    execute_target,
+                    target=target,
+                    suite=suite,
+                    servers=servers,
+                    settings=settings,
+                    sync_options=sync_options,
+                    stamp=stamp,
+                    result_root=result_root,
+                    runtime_variables=runtime_variables,
+                    stop_on_fail=stop_on_fail,
+                    controller_log=controller_log,
+                ): index
+                for index, target in executable_targets
+            }
+            for future in as_completed(futures):
+                target_results[futures[future]] = future.result()
+
+    for index in sorted(target_results):
+        summary_rows.extend(target_results[index]["rows"])
+
+    total_failures = sum(1 for row in summary_rows if row["status"] == "FAILED")
+    summary_payload = {
+        "run_id": stamp,
+        "suite_name": suite["name"],
+        "server_list_name": servers["name"],
+        "failures": total_failures,
+        "rows": summary_rows,
+        "max_workers": max_workers,
+    }
+    write_summary_csv(result_root / "summary.csv", summary_rows)
+    write_json(result_root / "summary.json", summary_payload)
+
+    return {
+        "run_id": stamp,
+        "suite_name": suite["name"],
+        "server_list_name": servers["name"],
+        "failures": total_failures,
+        "summary_rows": summary_rows,
+        "result_root": str(result_root),
+        "run_manifest": run_manifest,
+        "summary": summary_payload,
+    }
+
+
+def execute_target(
+    *,
+    target: dict[str, Any],
+    suite: dict[str, Any],
+    servers: dict[str, Any],
+    settings: dict[str, Any],
+    sync_options: dict[str, bool],
+    stamp: str,
+    result_root: Path,
+    runtime_variables: dict[str, Any],
+    stop_on_fail: bool | None,
+    controller_log: Path,
+) -> dict[str, Any]:
+    target_name = target["name"]
+    target_result_root = result_root / target_name
+    rows: list[dict[str, Any]] = []
+    target_failed = False
+
+    try:
         print(f"\n[Target] {target_name}")
         append_log(controller_log, f"[Target] {target_name}")
 
-        target_result_root = result_root / target_name
         runtime_target_dir = (
             local_runtime_result_dir(stamp, target_name)
             if target["executor_type"] == "local"
@@ -214,40 +296,76 @@ def run_linux_suite_with_details(
                 explicit_stop=stop_on_fail,
                 controller_log=controller_log,
             )
-            summary_rows.extend(phase_rows)
+            rows.extend(phase_rows)
             if phase_failed:
                 target_failed = True
                 if phase_name != "post_test":
                     skip_main_test_phases = True
 
         collect_results_from_target(target, runtime_target_dir, target_result_root)
-        if target["executor_type"] == "local" and Path(runtime_target_dir).exists():
-            shutil.rmtree(runtime_target_dir)
+        if target["executor_type"] == "local":
+            cleanup_local_runtime_dir(Path(runtime_target_dir), controller_log)
 
         print(f"  [Result] {target_name} {'FAILED' if target_failed else 'PASSED'}")
         append_log(controller_log, f"  [Result] {target_name} {'FAILED' if target_failed else 'PASSED'}")
-
-    total_failures = sum(1 for row in summary_rows if row["status"] == "FAILED")
-    summary_payload = {
-        "run_id": stamp,
-        "suite_name": suite["name"],
-        "server_list_name": servers["name"],
-        "failures": total_failures,
-        "rows": summary_rows,
-    }
-    write_summary_csv(result_root / "summary.csv", summary_rows)
-    write_json(result_root / "summary.json", summary_payload)
+    except Exception as exc:
+        target_failed = True
+        target_result_root.mkdir(parents=True, exist_ok=True)
+        message = f"{type(exc).__name__}: {exc}"
+        write_json(
+            target_result_root / "target_error.json",
+            {
+                "target_name": target_name,
+                "error": message,
+            },
+        )
+        append_log(controller_log, f"  [Result] {target_name} FAILED: {message}")
+        rows.append(
+            {
+                "target_name": target_name,
+                "phase": "target",
+                "test_name": "TARGET-ERROR",
+                "type": "target_error",
+                "status": "FAILED",
+                "return_code": 1,
+                "result_directory": str(target_result_root),
+                "message": message,
+            }
+        )
 
     return {
-        "run_id": stamp,
-        "suite_name": suite["name"],
-        "server_list_name": servers["name"],
-        "failures": total_failures,
-        "summary_rows": summary_rows,
-        "result_root": str(result_root),
-        "run_manifest": run_manifest,
-        "summary": summary_payload,
+        "target_name": target_name,
+        "failed": target_failed,
+        "rows": rows,
     }
+
+
+def build_skipped_target_result(target_name: str, skip_reason: str) -> dict[str, Any]:
+    return {
+        "target_name": target_name,
+        "failed": False,
+        "rows": [
+            {
+                "target_name": target_name,
+                "phase": "target",
+                "test_name": "SKIPPED",
+                "type": "skip",
+                "status": "SKIPPED",
+                "return_code": 0,
+                "result_directory": "",
+                "message": skip_reason,
+            }
+        ],
+    }
+
+
+def cleanup_local_runtime_dir(path: Path, controller_log: Path) -> None:
+    if not path.exists():
+        return
+    try:
+        shutil.rmtree(path)
+    except OSError as exc:
+        append_log(controller_log, f"  [Warn] failed to clean local runtime directory {path}: {exc}")
 
 
 def execute_phase(

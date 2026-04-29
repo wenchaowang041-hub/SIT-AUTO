@@ -19,14 +19,16 @@ def run_plan(
     name: str,
     *,
     runtime_variables: dict[str, Any] | None = None,
+    max_workers: int | None = None,
 ) -> int:
-    return run_plan_with_details(name=name, runtime_variables=runtime_variables)["total_failures"]
+    return run_plan_with_details(name=name, runtime_variables=runtime_variables, max_workers=max_workers)["total_failures"]
 
 
 def run_plan_with_details(
     name: str,
     *,
     runtime_variables: dict[str, Any] | None = None,
+    max_workers: int | None = None,
 ) -> dict[str, Any]:
     plan = load_plan(name)
     settings = read_controller_settings()
@@ -38,6 +40,7 @@ def run_plan_with_details(
     total_failures = 0
 
     for run_definition in plan["runs"]:
+        run_workers = int(max_workers if max_workers is not None else run_definition.get("jobs", 1))
         merged_runtime_variables = dict(run_definition.get("runtime_variables", {}))
         merged_runtime_variables.update(runtime_variables or {})
 
@@ -52,6 +55,7 @@ def run_plan_with_details(
             "target_names": set(run_definition.get("target_names", [])),
             "labels_any": set(run_definition.get("labels_any", [])),
             "exclude_labels": set(run_definition.get("exclude_labels", [])),
+            "max_workers": run_workers,
         }
 
         if len(run_definition["server_lists"]) == 1:
@@ -77,6 +81,7 @@ def run_plan_with_details(
             "failures": failures,
             "status": "PASSED" if failures == 0 else "FAILED",
             "result_root": detail["result_root"],
+            "jobs": run_workers,
         }
         rows.append(run_row)
         runs.append(detail)

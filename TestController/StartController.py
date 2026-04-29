@@ -73,6 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan_parser = sub.add_parser("run-plan", help="按计划文件顺序执行多个套件/清单")
     plan_parser.add_argument("--name", required=True, help="计划文件名称")
     plan_parser.add_argument("--var", action="append", default=[], help="运行时变量，格式 KEY=VALUE")
+    plan_parser.add_argument("--jobs", type=positive_int, default=None, help="覆盖计划里的目标并发数")
 
     parse_parser = sub.add_parser("parse-results", help="解析最近一次结果并生成摘要")
     parse_scope = parse_parser.add_mutually_exclusive_group(required=True)
@@ -87,14 +88,25 @@ def build_parser() -> argparse.ArgumentParser:
 
 def add_shared_run_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--skip-toolkit-sync", action="store_true", help="跳过 Toolkit 同步")
-    parser.add_argument("--skip-user-sync", action="store_true", help="跳过 ToolkitUserFiles 同步")
-    parser.add_argument("--skip-settings-sync", action="store_true", help="跳过 ToolkitSettings 同步")
+    parser.add_argument("--skip-user-sync", action="store_true", help="跳过 Toolkit/UserFiles 同步")
+    parser.add_argument("--skip-settings-sync", action="store_true", help="跳过 Toolkit/Settings 同步")
     parser.add_argument("--stop-on-fail", action="store_true", help="任一步失败后立即停止当前目标")
     parser.add_argument("--skip-targets", nargs="*", default=[], help="要跳过的 target 名称")
     parser.add_argument("--targets", nargs="*", default=[], help="只执行这些 target 名称")
     parser.add_argument("--labels", nargs="*", default=[], help="只执行带这些标签之一的 target")
     parser.add_argument("--exclude-labels", nargs="*", default=[], help="排除带这些标签的 target")
     parser.add_argument("--var", action="append", default=[], help="运行时变量，格式 KEY=VALUE")
+    parser.add_argument("--jobs", type=positive_int, default=1, help="同一 server list 内最大并发 target 数")
+
+
+def positive_int(raw_value: str) -> int:
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"invalid integer: {raw_value}") from exc
+    if value < 1:
+        raise argparse.ArgumentTypeError("value must be >= 1")
+    return value
 
 
 def parse_runtime_variables(items: list[str]) -> dict[str, object]:
@@ -202,6 +214,7 @@ def main() -> int:
                 target_names=set(args.targets),
                 labels_any=set(args.labels),
                 exclude_labels=set(args.exclude_labels),
+                max_workers=args.jobs,
             )
 
         if args.command == "run-master-suite":
@@ -217,10 +230,11 @@ def main() -> int:
                 target_names=set(args.targets),
                 labels_any=set(args.labels),
                 exclude_labels=set(args.exclude_labels),
+                max_workers=args.jobs,
             )
 
         if args.command == "run-plan":
-            return run_plan(name=args.name, runtime_variables=parse_runtime_variables(args.var))
+            return run_plan(name=args.name, runtime_variables=parse_runtime_variables(args.var), max_workers=args.jobs)
 
         if args.command == "parse-results":
             report = parse_results(

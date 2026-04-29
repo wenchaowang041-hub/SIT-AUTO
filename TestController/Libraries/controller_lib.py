@@ -31,6 +31,22 @@ def controller_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def controller_user_files_root() -> Path:
+    return controller_root() / "UserFiles"
+
+
+def toolkit_root() -> Path:
+    return workspace_root() / "Toolkit"
+
+
+def toolkit_user_files_root() -> Path:
+    return toolkit_root() / "UserFiles"
+
+
+def toolkit_settings_root() -> Path:
+    return toolkit_root() / "Settings"
+
+
 def load_yaml(path: Path) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
@@ -46,9 +62,9 @@ def load_data_file(path: Path) -> dict[str, Any]:
 
 
 def read_controller_settings() -> dict[str, Any]:
-    # 控制器默认设置来自 yaml，再叠加 ToolkitSettings 里的外置 JSON。
+    # 控制器默认设置来自 yaml，再叠加 Toolkit/Settings 里的外置 JSON。
     settings = load_yaml(controller_root() / "DefaultControllerSettings.yaml")
-    toolkit_settings_file = workspace_root() / "ToolkitSettings" / "user-settings.json"
+    toolkit_settings_file = toolkit_settings_root() / "user-settings.json"
     if toolkit_settings_file.exists():
         settings = deep_merge(settings, load_json(toolkit_settings_file))
     return settings
@@ -79,7 +95,7 @@ def resolve_suite_file(name: str) -> Path:
             name,
             [
                 controller_root() / "TestSuites",
-                workspace_root() / "TestControllerUserFiles" / "TestSuites",
+                controller_user_files_root() / "TestSuites",
             ],
         )
     except FileNotFoundError as exc:
@@ -88,7 +104,7 @@ def resolve_suite_file(name: str) -> Path:
 
 def resolve_server_list_file(name: str) -> Path:
     try:
-        return resolve_named_file(name, [workspace_root() / "TestControllerUserFiles" / "ServerLists"])
+        return resolve_named_file(name, [controller_user_files_root() / "ServerLists"])
     except FileNotFoundError as exc:
         raise FileNotFoundError(f"server list was not found: {name}") from exc
 
@@ -107,12 +123,12 @@ def list_named_entries(*directories: Path) -> list[str]:
 def list_suite_names() -> list[str]:
     return list_named_entries(
         controller_root() / "TestSuites",
-        workspace_root() / "TestControllerUserFiles" / "TestSuites",
+        controller_user_files_root() / "TestSuites",
     )
 
 
 def list_server_list_names() -> list[str]:
-    return list_named_entries(workspace_root() / "TestControllerUserFiles" / "ServerLists")
+    return list_named_entries(controller_user_files_root() / "ServerLists")
 
 
 def run_timestamp() -> str:
@@ -275,7 +291,7 @@ def sync_setting_enabled(setting_name: str, suite_defaults: dict[str, Any], cont
 
 
 def sync_toolkit_if_needed(target: dict[str, Any], settings: dict[str, Any], sync_options: dict[str, bool]) -> None:
-    # 本地目标不需要同步；SSH 目标则按开关上传 Toolkit / ToolkitUserFiles / ToolkitSettings。
+    # 本地目标不需要同步；SSH 目标则按开关上传 Toolkit / Toolkit/UserFiles / Toolkit/Settings。
     if target["executor_type"] == "local" or not any(sync_options.values()):
         return
 
@@ -289,16 +305,16 @@ def sync_toolkit_if_needed(target: dict[str, Any], settings: dict[str, Any], syn
                 sftp,
                 settings["remote"].get(
                     "toolkit_settings_dir",
-                    posixpath.join(settings["remote"]["root_dir"], "ToolkitSettings"),
+                    posixpath.join(settings["remote"]["toolkit_dir"], "Settings"),
                 ),
             )
 
-            if sync_options.get("toolkit", False) and (workspace_root() / "Toolkit").exists():
-                upload_tree(sftp, workspace_root() / "Toolkit", remote_toolkit_dir)
-            if sync_options.get("toolkit_user", False) and (workspace_root() / "ToolkitUserFiles").exists():
-                upload_tree(sftp, workspace_root() / "ToolkitUserFiles", remote_toolkit_user_dir)
-            if sync_options.get("toolkit_settings", False) and (workspace_root() / "ToolkitSettings").exists():
-                upload_tree(sftp, workspace_root() / "ToolkitSettings", remote_toolkit_settings_dir)
+            if sync_options.get("toolkit", False) and toolkit_root().exists():
+                upload_tree(sftp, toolkit_root(), remote_toolkit_dir, exclude_names={"UserFiles", "Settings", "__pycache__"})
+            if sync_options.get("toolkit_user", False) and toolkit_user_files_root().exists():
+                upload_tree(sftp, toolkit_user_files_root(), remote_toolkit_user_dir)
+            if sync_options.get("toolkit_settings", False) and toolkit_settings_root().exists():
+                upload_tree(sftp, toolkit_settings_root(), remote_toolkit_settings_dir)
         finally:
             sftp.close()
     finally:
@@ -496,12 +512,20 @@ def run_ssh_command(target: dict[str, Any], command: str, timeout_sec: int) -> i
         client.close()
 
 
-def upload_tree(sftp: paramiko.SFTPClient, local_dir: Path, remote_dir: str) -> None:
+def upload_tree(
+    sftp: paramiko.SFTPClient,
+    local_dir: Path,
+    remote_dir: str,
+    exclude_names: set[str] | None = None,
+) -> None:
+    exclude_names = exclude_names or set()
     ensure_remote_dir(sftp, remote_dir)
     for item in local_dir.iterdir():
+        if item.name in exclude_names:
+            continue
         remote_path = posixpath.join(remote_dir, item.name)
         if item.is_dir():
-            upload_tree(sftp, item, remote_path)
+            upload_tree(sftp, item, remote_path, exclude_names=exclude_names)
         else:
             sftp.put(str(item), remote_path)
 

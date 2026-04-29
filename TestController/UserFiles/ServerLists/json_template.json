@@ -4,8 +4,8 @@
     "remote": {
       "root_dir": "~/sit-auto",
       "toolkit_dir": "~/sit-auto/Toolkit",
-      "toolkit_user_dir": "~/sit-auto/ToolkitUserFiles",
-      "toolkit_settings_dir": "~/sit-auto/ToolkitSettings",
+      "toolkit_user_dir": "~/sit-auto/Toolkit/UserFiles",
+      "toolkit_settings_dir": "~/sit-auto/Toolkit/Settings",
       "results_dir": "~/sit-auto/Results"
     }
   },

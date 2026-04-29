@@ -9,9 +9,11 @@ defaults:
   target_names: []
   labels_any: []
   exclude_labels: []
+  jobs: 1
 runs:
   - suite: linux_smoke
     server_list: lab_servers
+    jobs: 2
     runtime_variables:
       collect_file: /etc/os-release
   - suite: linux_regression

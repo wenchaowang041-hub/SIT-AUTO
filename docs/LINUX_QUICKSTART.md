@@ -40,12 +40,12 @@ python TestController/StartController.py check-environment
 
 优先复制下面两个模板之一：
 
-- [C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\ServerLists\linux_template.yaml](C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\ServerLists\linux_template.yaml)
-- [C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\ServerLists\json_template.json](C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\ServerLists\json_template.json)
+- [linux_template.yaml](../TestController/UserFiles/ServerLists/linux_template.yaml)
+- [json_template.json](../TestController/UserFiles/ServerLists/json_template.json)
 
 建议先新建一个真实清单，例如：
 
-- `TestControllerUserFiles/ServerLists/lab_linux.yaml`
+- `TestController/UserFiles/ServerLists/lab_linux.yaml`
 
 至少填这些字段：
 
@@ -57,7 +57,7 @@ python TestController/StartController.py check-environment
 
 如果远端目录不是默认的 `~/sit-auto`，同时改：
 
-- [C:\Users\72785\Desktop\SIT-AUTO\ToolkitSettings\user-settings.json](C:\Users\72785\Desktop\SIT-AUTO\ToolkitSettings\user-settings.json)
+- [user-settings.json](../Toolkit/Settings/user-settings.json)
 
 ## 4. 先做预检查
 
@@ -104,7 +104,7 @@ python TestController/StartController.py preflight --suite linux_power_cycle --s
 python TestController/StartController.py run-suite --name linux_smoke --server-list lab_linux
 ```
 
-如果先不想同步 `ToolkitUserFiles` 或 `ToolkitSettings`：
+如果先不想同步 `Toolkit/UserFiles` 或 `Toolkit/Settings`：
 
 ```bash
 python TestController/StartController.py run-suite --name linux_smoke --server-list lab_linux --skip-user-sync --skip-settings-sync
@@ -120,6 +120,12 @@ python TestController/StartController.py run-suite --name linux_smoke --server-l
 
 ```bash
 python TestController/StartController.py run-suite --name linux_smoke --server-list lab_linux --targets node01 node02
+```
+
+多台机器可以并发跑，`--jobs` 表示同一 ServerList 里同时执行的 target 数：
+
+```bash
+python TestController/StartController.py run-suite --name linux_smoke --server-list lab_linux --jobs 2
 ```
 
 ## 6. 解析结果
@@ -146,16 +152,22 @@ python TestController/StartController.py parse-results --plan local_trial
 
 计划文件模板：
 
-- [C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\Plans\plan_template.yaml](C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\Plans\plan_template.yaml)
+- [plan_template.yaml](../TestController/UserFiles/Plans/plan_template.yaml)
 
 本地演示计划：
 
-- [C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\Plans\local_trial.yaml](C:\Users\72785\Desktop\SIT-AUTO\TestControllerUserFiles\Plans\local_trial.yaml)
+- [local_trial.yaml](../TestController/UserFiles/Plans/local_trial.yaml)
 
 执行计划：
 
 ```bash
 python TestController/StartController.py run-plan --name local_trial
+```
+
+临时覆盖计划里的并发数：
+
+```bash
+python TestController/StartController.py run-plan --name local_trial --jobs 2
 ```
 
 ## 8. 明天现场排障时先看哪里

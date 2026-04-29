@@ -67,16 +67,17 @@ Release Notes 6.2.1 明确提到：
 
 - 保留原框架目录：
   - `TestController`
-  - `TestControllerUserFiles`
   - `Toolkit`
-  - `ToolkitUserFiles`
-  - `ToolkitSettings`
+  - `TestController/UserFiles`
+  - `Toolkit/UserFiles`
+  - `Toolkit/Settings`
 - 加入 `run-master-suite` 批量入口
 - 套件和 ServerList 支持运行时 `settings` 合并
-- 支持 `Toolkit / ToolkitUserFiles / ToolkitSettings` 分开同步
+- 支持 `Toolkit / Toolkit/UserFiles / Toolkit/Settings` 分开同步
 - 支持 YAML/JSON 两类 ServerList
 - 支持目标筛选和标签筛选
 - 支持计划文件入口 `run-plan`
+- 支持同一 ServerList 内 target 级并发：`--jobs`
 - 支持试跑前联合检查 `preflight`
 - 支持结果解析入口 `parse-results`
 - 修掉远端 `~/...` 路径在 SFTP/结果目录上的展开问题
@@ -85,5 +86,5 @@ Release Notes 6.2.1 明确提到：
 
 - `Run-TcSuite` 风格的计划文件入口
 - `Parse-*` 风格的结果解析器
-- 更完整的并发和同步机制
+- 跨 ServerList 并发调度和实机同步压测
 - 更完整的 Linux/BMC 实机联调

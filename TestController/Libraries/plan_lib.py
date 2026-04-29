@@ -6,25 +6,27 @@ from typing import Any
 try:
     from Libraries.controller_lib import (
         deep_merge,
+        controller_user_files_root,
         list_named_entries,
         load_data_file,
         resolve_named_file,
-        workspace_root,
+        controller_root,
     )
 except ModuleNotFoundError:
     from TestController.Libraries.controller_lib import (
         deep_merge,
+        controller_user_files_root,
         list_named_entries,
         load_data_file,
         resolve_named_file,
-        workspace_root,
+        controller_root,
     )
 
 
 def plan_directories() -> list[Path]:
     return [
-        workspace_root() / "TestControllerUserFiles" / "Plans",
-        workspace_root() / "TestController" / "Plans",
+        controller_user_files_root() / "Plans",
+        controller_root() / "Plans",
     ]
 
 
@@ -55,6 +57,7 @@ def normalize_plan_definition(raw_plan: dict[str, Any], plan_name: str) -> dict[
         "target_names": [],
         "labels_any": [],
         "exclude_labels": [],
+        "jobs": 1,
     }
     defaults = deep_merge(defaults, raw_plan.get("defaults", {}))
 

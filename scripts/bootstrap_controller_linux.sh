@@ -16,5 +16,5 @@ python TestController/StartController.py check-environment
 echo
 echo "控制器基础依赖安装完成。"
 echo "下一步建议："
-echo "  1. 编辑 TestControllerUserFiles/ServerLists 下的实际清单"
+echo "  1. 编辑 TestController/UserFiles/ServerLists 下的实际清单"
 echo "  2. 运行: python TestController/StartController.py preflight --suite linux_smoke --server-list <你的清单> --probe-ssh"

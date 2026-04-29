@@ -24,6 +24,7 @@ def run_master_suite(
     target_names: set[str] | None = None,
     labels_any: set[str] | None = None,
     exclude_labels: set[str] | None = None,
+    max_workers: int = 1,
 ) -> int:
     return run_master_suite_with_details(
         name=name,
@@ -37,6 +38,7 @@ def run_master_suite(
         target_names=target_names,
         labels_any=labels_any,
         exclude_labels=exclude_labels,
+        max_workers=max_workers,
     )["total_failures"]
 
 
@@ -53,8 +55,9 @@ def run_master_suite_with_details(
     target_names: set[str] | None = None,
     labels_any: set[str] | None = None,
     exclude_labels: set[str] | None = None,
+    max_workers: int = 1,
 ) -> dict[str, Any]:
-    # 先做串行版 MasterSuite，重点是保留原框架的批量入口和批量结果汇总。
+    # MasterSuite 仍按 ServerList 串行推进；每个 ServerList 内部可按 target 并发。
     settings = read_controller_settings()
     stamp = run_timestamp()
     master_root = ensure_master_result_dir(settings, name, stamp)
@@ -76,6 +79,7 @@ def run_master_suite_with_details(
             target_names=target_names or set(),
             labels_any=labels_any or set(),
             exclude_labels=exclude_labels or set(),
+            max_workers=max_workers,
         )
         rows.append(
             {
@@ -104,6 +108,7 @@ def run_master_suite_with_details(
             "toolkit_user": not skip_user_sync,
             "toolkit_settings": not skip_settings_sync,
         },
+        "max_workers": max_workers,
     }
     write_json(master_root / "master_summary.json", summary)
     return {
